@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiz App</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+
+      .quiz-container {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 0 9px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 600px;
+        padding: 30px;
+        position: relative;
+      }
+
+      .quiz-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        align-items: center;
+      }
+
+      .timer {
+        background-color: #333;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+      }
+
+      .question-counter {
+        color: #666;
+        font-size: 14px;
+      }
+
+      h2 {
+        margin-top: 0;
+        color: #333;
+      }
+
+      .question {
+        font-size: 18px;
+        margin-bottom: 20px;
+        font-weight: 500;
+      }
+
+      .options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .option {
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .option:hover {
+        background-color: #f0f0f0;
+      }
+
+      .option.selected {
+        background-color: #4caf50;
+        color: white;
+        border-color: #4caf50;
+      }
+
+      .option.correct {
+        background-color: #4caf50;
+        color: white;
+        border-color: #4caf50;
+      }
+
+      .option.incorrect {
+        background-color: #f44336;
+        color: white;
+        border-color: #f44336;
+      }
+
+      .next-btn {
+        background-color: #2196f3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+        float: right;
+      }
+
+      .next-btn:hover {
+        background-color: #0b7dda;
+      }
+
+      .next-btn:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .result-container {
+        text-align: center;
+        display: none;
+      }
+
+      .result-container h2 {
+        color: #333;
+        margin-bottom: 20px;
+      }
+
+      .score {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+
+      .restart-btn {
+        background-color: #2196f3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+
+      .restart-btn:hover {
+        background-color: #0b7dda;
+      }
+
+      .summary {
+        text-align: left;
+        margin-top: 30px;
+        border-top: 1px solid #ddd;
+        padding-top: 20px;
+      }
+
+      .summary-item {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+      }
+
+      .summary-item.correct {
+        background-color: rgba(76, 175, 80, 0.1);
+      }
+
+      .summary-item.incorrect {
+        background-color: rgba(244, 67, 54, 0.1);
+      }
+
+      .progress-bar {
+        height: 5px;
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        overflow: hidden;
+      }
+
+      .progress {
+        height: 100%;
+        background-color: #4caf50;
+        width: 0%;
+        transition: width 0.3s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="quiz-container">
+      <div class="quiz-header">
+        <div class="question-counter">
+          Question <span id="current-question">1</span>/<span
+            id="total-questions"
+            >0</span
+          >
+        </div>
+        <div class="timer" id="timer">00:00</div>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress" id="progress"></div>
+      </div>
+
+      <div id="quiz-content">
+        <h2>Quiz</h2>
+        <div class="question" id="question">Loading question...</div>
+        <div class="options" id="options">
+          <!-- Options will be inserted here by JavaScript -->
+        </div>
+        <button class="next-btn" id="next-btn" disabled>Next</button>
+      </div>
+
+      <div class="result-container" id="result-container">
+        <h2>Quiz Completed!</h2>
+        <div class="score" id="score">You scored 0 out of 0</div>
+        <div class="time-taken" id="time-taken">Time taken: 00:00</div>
+        <button class="restart-btn" id="restart-btn">Restart Quiz</button>
+
+        <div class="summary" id="summary">
+          <h3>Summary</h3>
+          <!-- Summary items will be inserted here by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Quiz questions
+      const questions = [
+        {
+          question: "What is the capital of France?",
+          options: ["London", "Berlin", "Paris", "Madrid"],
+          answer: 2,
+        },
+        {
+          question: "Which planet is known as the Red Planet?",
+          options: ["Venus", "Mars", "Jupiter", "Saturn"],
+          answer: 1,
+        },
+        {
+          question: "What is the largest mammal?",
+          options: ["Elephant", "Blue Whale", "Giraffe", "Polar Bear"],
+          answer: 1,
+        },
+        {
+          question: "Which language runs in a web browser?",
+          options: ["Java", "C", "Python", "JavaScript"],
+          answer: 3,
+        },
+        {
+          question: "What year was JavaScript launched?",
+          options: ["1996", "1995", "1994", "none of the above"],
+          answer: 1,
+        },
+        {
+          question: "Which element has the chemical symbol 'O'?",
+          options: ["Gold", "Oxygen", "Silver", "Iron"],
+          answer: 1,
+        },
+        {
+          question: "Who wrote the play 'Romeo and Juliet'?",
+          options: [
+            "William Wordsworth",
+            "Jane Austen",
+            "William Shakespeare",
+            "Charles Dickens",
+          ],
+          answer: 2,
+        },
+        {
+          question: "What is the currency of Japan?",
+          options: ["Yen", "Won", "Dollar", "Euro"],
+          answer: 0,
+        },
+        {
+          question: "What is 9 x 9?",
+          options: ["81", "72", "99", "90"],
+          answer: 0,
+        },
+        {
+          question: "Which gas do plants absorb from the atmosphere?",
+          options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"],
+          answer: 1,
+        },
+        {
+          question: "Which organ purifies our blood?",
+          options: ["Heart", "Liver", "Kidney", "Lungs"],
+          answer: 2,
+        },
+        {
+          question: "How many continents are there on Earth?",
+          options: ["5", "6", "7", "8"],
+          answer: 2,
+        },
+        {
+          question: "Which is the longest river in the world?",
+          options: ["Amazon", "Yangtze", "Mississippi", "Nile"],
+          answer: 3,
+        },
+        {
+          question: "Who was the first person to step on the moon?",
+          options: [
+            "Neil Armstrong",
+            "Buzz Aldrin",
+            "Yuri Gagarin",
+            "Michael Collins",
+          ],
+          answer: 0,
+        },
+        {
+          question: "Which country is known as the Land of the Rising Sun?",
+          options: ["China", "New Zealand", "Japan", "India"],
+          answer: 2,
+        },
+        {
+          question: "What is the boiling point of water in Celsius?",
+          options: ["50°C", "100°C", "90°C", "80°C"],
+          answer: 1,
+        },
+        {
+          question: "What is the main language spoken in Brazil?",
+          options: ["Spanish", "Portuguese", "English", "French"],
+          answer: 1,
+        },
+        {
+          question: "What is the smallest prime number?",
+          options: ["0", "1", "2", "3"],
+          answer: 2,
+        },
+        {
+          question: "Which planet is closest to the sun?",
+          options: ["Venus", "Earth", "Mars", "Mercury"],
+          answer: 3,
+        },
+        {
+          question: "Which bird is known for mimicking human speech?",
+          options: ["Sparrow", "Crow", "Parrot", "Pigeon"],
+          answer: 2,
+        },
+        {
+          question: "How many bones are in the adult human body?",
+          options: ["206", "210", "201", "196"],
+          answer: 0,
+        },
+        {
+          question:
+            "Which famous scientist developed the theory of relativity?",
+          options: [
+            "Isaac Newton",
+            "Albert Einstein",
+            "Nikola Tesla",
+            "Galileo Galilei",
+          ],
+          answer: 1,
+        },
+        {
+          question: "Which instrument has 88 keys?",
+          options: ["Guitar", "Violin", "Piano", "Flute"],
+          answer: 2,
+        },
+        {
+          question: "Which ocean is the largest?",
+          options: ["Atlantic", "Indian", "Arctic", "Pacific"],
+          answer: 3,
+        },
+        {
+          question: "What is H2O commonly known as?",
+          options: ["Oxygen", "Hydrogen", "Salt", "Water"],
+          answer: 3,
+        },
+        {
+          question: "Which festival is known as the Festival of Lights?",
+          options: ["Holi", "Diwali", "Christmas", "Eid"],
+          answer: 1,
+        },
+        {
+          question: "Who painted the Mona Lisa?",
+          options: [
+            "Pablo Picasso",
+            "Leonardo da Vinci",
+            "Michelangelo",
+            "Vincent van Gogh",
+          ],
+          answer: 1,
+        },
+        {
+          question: "Which part of the plant conducts photosynthesis?",
+          options: ["Root", "Stem", "Leaf", "Flower"],
+          answer: 2,
+        },
+        {
+          question: "How many legs does a spider have?",
+          options: ["6", "8", "10", "12"],
+          answer: 1,
+        },
+        {
+          question: "Which superhero is known as the 'Caped Crusader'?",
+          options: ["Superman", "Batman", "Iron Man", "Spider-Man"],
+          answer: 1,
+        },
+      ];
+
+      // DOM elements
+      const quizContent = document.getElementById("quiz-content");
+      const resultContainer = document.getElementById("result-container");
+      const questionElement = document.getElementById("question");
+      const optionsElement = document.getElementById("options");
+      const nextButton = document.getElementById("next-btn");
+      const currentQuestionElement =
+        document.getElementById("current-question");
+      const totalQuestionsElement = document.getElementById("total-questions");
+      const timerElement = document.getElementById("timer");
+      const scoreElement = document.getElementById("score");
+      const timeTakenElement = document.getElementById("time-taken");
+      const summaryElement = document.getElementById("summary");
+      const restartButton = document.getElementById("restart-btn");
+      const progressElement = document.getElementById("progress");
+
+      // Quiz state variables
+      let currentQuestionIndex = 0;
+      let score = 0;
+      let timer;
+      let seconds = 0;
+      let selectedOptionIndex = null;
+      let userAnswers = [];
+
+      // Initialize the quiz
+      function initQuiz() {
+        totalQuestionsElement.textContent = questions.length;
+        startTimer();
+        loadQuestion();
+      }
+
+      // Start the timer
+      function startTimer() {
+        timer = setInterval(() => {
+          seconds++;
+          updateTimerDisplay();
+        }, 1000);
+      }
+
+      // Update timer display
+      function updateTimerDisplay() {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        timerElement.textContent = `${minutes
+          .toString()
+          .padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+      }
+
+      // Load a question
+      function loadQuestion() {
+        resetState();
+        const currentQuestion = questions[currentQuestionIndex];
+        questionElement.textContent = currentQuestion.question;
+        currentQuestionElement.textContent = currentQuestionIndex + 1;
+
+        // Update progress bar
+        progressElement.style.width = `${
+          ((currentQuestionIndex + 1) / questions.length) * 100
+        }%`;
+
+        currentQuestion.options.forEach((option, index) => {
+          const optionElement = document.createElement("div");
+          optionElement.classList.add("option");
+          optionElement.textContent = option;
+          optionElement.addEventListener("click", () => selectOption(index));
+          optionsElement.appendChild(optionElement);
+        });
+      }
+
+      // Reset the state for a new question
+      function resetState() {
+        selectedOptionIndex = null;
+        nextButton.disabled = true;
+        while (optionsElement.firstChild) {
+          optionsElement.removeChild(optionsElement.firstChild);
+        }
+      }
+
+      // Select an option
+      function selectOption(index) {
+        if (selectedOptionIndex !== null) return;
+
+        selectedOptionIndex = index;
+        const options = document.querySelectorAll(".option");
+        options.forEach((option, i) => {
+          if (i === index) {
+            option.classList.add("selected");
+          }
+        });
+        nextButton.disabled = false;
+      }
+
+      // Show the result of the selected option
+      function showResult() {
+        const currentQuestion = questions[currentQuestionIndex];
+        const options = document.querySelectorAll(".option");
+
+        options.forEach((option, index) => {
+          option.classList.remove("selected");
+          if (index === currentQuestion.answer) {
+            option.classList.add("correct");
+          } else if (
+            index === selectedOptionIndex &&
+            index !== currentQuestion.answer
+          ) {
+            option.classList.add("incorrect");
+          }
+        });
+
+        // Check if answer is correct
+        const isCorrect = selectedOptionIndex === currentQuestion.answer;
+        if (isCorrect) {
+          score++;
+        }
+
+        // Store user answer for summary
+        userAnswers.push({
+          question: currentQuestion.question,
+          userAnswer: currentQuestion.options[selectedOptionIndex],
+          correctAnswer: currentQuestion.options[currentQuestion.answer],
+          isCorrect: isCorrect,
+        });
+
+        nextButton.textContent =
+          currentQuestionIndex === questions.length - 1 ? "Finish" : "Next";
+      }
+
+      // Show the final results
+      function showResults() {
+        clearInterval(timer);
+        quizContent.style.display = "none";
+        resultContainer.style.display = "block";
+
+        scoreElement.textContent = `You scored ${score} out of ${questions.length}`;
+        updateTimerDisplay();
+        timeTakenElement.textContent = `Time taken: ${timerElement.textContent}`;
+
+        // Create summary
+        summaryElement.innerHTML = "<h3>Summary</h3>";
+        userAnswers.forEach((answer, index) => {
+          const summaryItem = document.createElement("div");
+          summaryItem.classList.add("summary-item");
+          summaryItem.classList.add(answer.isCorrect ? "correct" : "incorrect");
+
+          summaryItem.innerHTML = `
+                    <p><strong>Question ${index + 1}:</strong> ${
+            answer.question
+          }</p>
+                    <p>Your answer: ${answer.userAnswer}</p>
+                    <p>Correct answer: ${answer.correctAnswer}</p>
+                `;
+
+          summaryElement.appendChild(summaryItem);
+        });
+      }
+
+      // Next button event listener
+      nextButton.addEventListener("click", () => {
+        showResult();
+
+        if (currentQuestionIndex < questions.length - 1) {
+          currentQuestionIndex++;
+          loadQuestion();
+        } else {
+          showResults();
+        }
+      });
+
+      // Restart button event listener
+      restartButton.addEventListener("click", () => {
+        currentQuestionIndex = 0;
+        score = 0;
+        seconds = 0;
+        userAnswers = [];
+
+        quizContent.style.display = "block";
+        resultContainer.style.display = "none";
+
+        resetState();
+        initQuiz();
+      });
+
+      // Start the quiz when the page loads
+      window.addEventListener("load", initQuiz);
+    </script>
+  </body>
+</html>
